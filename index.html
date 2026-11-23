@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive SQL & Data Analytics Sandbox | Portfolio Demo</title>
+  
+  <!-- CodeMirror for SQL Syntax Highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/eclipse.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+
+  <!-- SQL.js (SQLite compiled to WebAssembly) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+
+  <style>
+    :root {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f1f5f9;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --border-color: #cbd5e1;
+      --accent-color: #2563eb;
+      --accent-hover: #1d4ed8;
+      --danger-color: #dc2626;
+      --danger-hover: #b91c1c;
+      --success-color: #059669;
+      --badge-bg: #e2e8f0;
+      --badge-text: #1e293b;
+      --table-hover: #f1f5f9;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --border-color: #334155;
+      --accent-color: #3b82f6;
+      --accent-hover: #60a5fa;
+      --danger-color: #ef4444;
+      --danger-hover: #f87171;
+      --success-color: #10b981;
+      --badge-bg: #334155;
+      --badge-text: #e2e8f0;
+      --table-hover: #273549;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    /* Header */
+    header {
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: var(--shadow);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-icon {
+      background: var(--accent-color);
+      color: #fff;
+      font-weight: 700;
+      padding: 0.4rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      letter-spacing: 0.5px;
+    }
+
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .brand p {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    /* Buttons */
+    button {
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 0.5rem 0.9rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    button:hover {
+      background-color: var(--bg-tertiary);
+    }
+
+    .btn-primary {
+      background-color: var(--accent-color);
+      color: #ffffff;
+      border-color: var(--accent-color);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    .btn-danger {
+      color: var(--danger-color);
+      border-color: var(--danger-color);
+      background-color: transparent;
+    }
+
+    .btn-danger:hover {
+      background-color: var(--danger-color);
+      color: #ffffff;
+    }
+
+    /* Main Layout */
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1.25rem;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 960px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards / Panels */
+    .panel {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      padding: 0.75rem 1rem;
+      background-color: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 700;
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-body {
+      padding: 1rem;
+    }
+
+    /* Left Sidebar: Database Explorer & Samples */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .schema-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .schema-item {
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .schema-title {
+      padding: 0.55rem 0.75rem;
+      background-color: var(--bg-primary);
+      font-weight: 600;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .schema-title:hover {
+      background-color: var(--bg-tertiary);
+    }
+
+    .schema-cols {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      border-top: 1px solid var(--border-color);
+      display: none;
+      background-color: var(--bg-secondary);
+    }
+
+    .schema-item.open .schema-cols {
+      display: block;
+    }
+
+    .col-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.2rem 0;
+      border-bottom: 1px dashed var(--border-color);
+    }
+
+    .col-row:last-child {
+      border-bottom: none;
+    }
+
+    .col-type {
+      color: var(--text-secondary);
+      font-family: monospace;
+      font-size: 0.75rem;
+    }
+
+    .pk-badge {
+      background: var(--accent-color);
+      color: #fff;
+      font-size: 0.65rem;
+      padding: 0.05rem 0.3rem;
+      border-radius: 3px;
+      margin-left: 0.3rem;
+    }
+
+    .fk-badge {
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-size: 0.65rem;
+      padding: 0.05rem 0.3rem;
+      border-radius: 3px;
+      margin-left: 0.3rem;
+    }
+
+    /* Sample Queries Accordion / Filter */
+    .category-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .cat-btn {
+      font-size: 0.72rem;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      background-color: var(--bg-primary);
+    }
+
+    .cat-btn.active {
+      background-color: var(--accent-color);
+      color: #fff;
+      border-color: var(--accent-color);
+    }
+
+    .sample-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      max-height: 440px;
+      overflow-y: auto;
+    }
+
+    .sample-card {
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+      background-color: var(--bg-primary);
+    }
+
+    .sample-card:hover {
+      border-color: var(--accent-color);
+      background-color: var(--bg-tertiary);
+    }
+
+    .sample-card.active {
+      border-color: var(--accent-color);
+      border-left: 4px solid var(--accent-color);
+    }
+
+    .sample-tag {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent-color);
+      margin-bottom: 0.15rem;
+      display: block;
+    }
+
+    .sample-title {
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* Right Workspace */
+    .workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      min-width: 0;
+    }
+
+    .query-info {
+      padding: 0.75rem 1rem;
+      background-color: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .query-info strong {
+      color: var(--text-primary);
+    }
+
+    .CodeMirror {
+      height: 210px;
+      font-family: "Fira Code", "JetBrains Mono", Consolas, monospace;
+      font-size: 0.9rem;
+    }
+
+    .editor-toolbar {
+      padding: 0.65rem 1rem;
+      background-color: var(--bg-tertiary);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .shortcut-hint {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    /* Results Table */
+    .status-bar {
+      padding: 0.6rem 1rem;
+      font-size: 0.82rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .status-ok {
+      color: var(--success-color);
+      font-weight: 600;
+    }
+
+    .status-err {
+      color: var(--danger-color);
+      font-weight: 600;
+    }
+
+    .table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      max-height: 480px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+      font-weight: 700;
+      padding: 0.65rem 0.85rem;
+      border-bottom: 2px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+      color: var(--text-primary);
+    }
+
+    tr:hover td {
+      background-color: var(--table-hover);
+    }
+
+    .null-val {
+      color: var(--text-secondary);
+      font-style: italic;
+      font-size: 0.78rem;
+    }
+
+    .empty-state {
+      padding: 2.5rem 1rem;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border-color);
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">SQL.js</div>
+      <div>
+        <h1>Interactive SQL Analytics Sandbox</h1>
+        <p>In-Browser SQLite Engine • Data Cleaning, ETL & Business Intelligence Demo</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="themeToggle" title="Toggle Dark/Light Theme">🌓 Theme</button>
+      <button id="resetDbBtn" class="btn-danger" title="Restore initial sample dataset">↺ Reset Database</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Left Column: Explorer & 15 Sample Queries -->
+    <aside class="sidebar">
+      <!-- Database Explorer -->
+      <section class="panel">
+        <div class="panel-header">
+          <span>🗄️ Database Explorer (5 Tables)</span>
+          <span style="font-size: 0.75rem; color: var(--text-secondary);">Click to inspect</span>
+        </div>
+        <div class="panel-body">
+          <div id="schemaList" class="schema-list"></div>
+        </div>
+      </section>
+
+      <!-- 15 Sample Queries -->
+      <section class="panel">
+        <div class="panel-header">
+          <span>📚 15 SQL Business Scenarios</span>
+        </div>
+        <div class="panel-body">
+          <div class="category-tabs" id="categoryTabs">
+            <button class="cat-btn active" data-cat="ALL">All (15)</button>
+            <button class="cat-btn" data-cat="JOIN">JOIN</button>
+            <button class="cat-btn" data-cat="CTE">CTE</button>
+            <button class="cat-btn" data-cat="WINDOW">Window</button>
+            <button class="cat-btn" data-cat="CLEANING">Cleaning</button>
+            <button class="cat-btn" data-cat="ANALYTICS">Analytics</button>
+          </div>
+          <div id="sampleList" class="sample-list"></div>
+        </div>
+      </section>
+    </aside>
+
+    <!-- Right Column: SQL Editor & Results -->
+    <section class="workspace">
+      <!-- SQL Editor Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <span>✍️ SQL Query Editor (SQLite 3 Dialect)</span>
+          <div style="display: flex; gap: 0.4rem;">
+            <button id="formatBtn" style="padding: 0.25rem 0.6rem; font-size: 0.78rem;">Clear Editor</button>
+          </div>
+        </div>
+        <div id="queryDescription" class="query-info">
+          <strong>Selected Scenario:</strong> Select a sample query on the left or write your own SQL below.
+        </div>
+        <textarea id="sqlEditor"></textarea>
+        <div class="editor-toolbar">
+          <span class="shortcut-hint">Tip: Press <strong>Ctrl + Enter</strong> (or Cmd + Enter) to run query</span>
+          <div style="display: flex; gap: 0.5rem;">
+            <button id="exportCsvBtn" disabled>⬇ Export CSV</button>
+            <button id="runQueryBtn" class="btn-primary">▶ Run Query</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Query Results Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <span>📊 Query Results</span>
+          <span id="rowCountBadge" style="font-size: 0.78rem; color: var(--text-secondary);">0 rows</span>
+        </div>
+        <div id="statusBar" class="status-bar">
+          <span class="status-ok">Initializing WebAssembly SQLite engine...</span>
+        </div>
+        <div id="resultsContainer" class="table-wrapper">
+          <div class="empty-state">Loading database...</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Built with SQLite (WebAssembly) • Zero-Backend Client-Side Architecture • Ready for Custom SQL, ETL & Data Automation Projects
+  </footer>
+
+  <script>
+    // ==========================================
+    // 1. INITIAL SQL SCHEMA & SEED DATA (5 TABLES)
+    // ==========================================
+    const INIT_SQL = `
+      PRAGMA foreign_keys = ON;
+
+      DROP TABLE IF EXISTS support_tickets;
+      DROP TABLE IF EXISTS order_items;
+      DROP TABLE IF EXISTS orders;
+      DROP TABLE IF EXISTS products;
+      DROP TABLE IF EXISTS customers;
+
+      -- Table 1: Customers (Includes intentional dirty whitespace/casing for Data Cleaning demos)
+      CREATE TABLE customers (
+        customer_id INTEGER PRIMARY KEY,
+        full_name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        segment TEXT NOT NULL,
+        country TEXT NOT NULL,
+        signup_date TEXT NOT NULL
+      );
+
+      -- Table 2: Products
+      CREATE TABLE products (
+        product_id INTEGER PRIMARY KEY,
+        sku TEXT UNIQUE NOT NULL,
+        product_name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        unit_cost REAL NOT NULL,
+        unit_price REAL NOT NULL
+      );
+
+      -- Table 3: Orders
+      CREATE TABLE orders (
+        order_id INTEGER PRIMARY KEY,
+        customer_id INTEGER NOT NULL,
+        order_date TEXT NOT NULL,
+        status TEXT NOT NULL,
+        discount_pct REAL,
+        shipping_fee REAL NOT NULL,
+        FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+      );
+
+      -- Table 4: Order Items
+      CREATE TABLE order_items (
+        item_id INTEGER PRIMARY KEY,
+        order_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        quantity INTEGER NOT NULL,
+        sold_price REAL NOT NULL,
+        FOREIGN KEY (order_id) REFERENCES orders(order_id),
+        FOREIGN KEY (product_id) REFERENCES products(product_id)
+      );
+
+      -- Table 5: Support Tickets
+      CREATE TABLE support_tickets (
+        ticket_id INTEGER PRIMARY KEY,
+        customer_id INTEGER NOT NULL,
+        order_id INTEGER,
+        created_date TEXT NOT NULL,
+        issue_type TEXT NOT NULL,
+        resolution_hours REAL,
+        csat_score INTEGER,
+        FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
+        FOREIGN KEY (order_id) REFERENCES orders(order_id)
+      );
+
+      -- Seed Customers
+      INSERT INTO customers VALUES
+        (1, '  alice johnson ', 'ALICE.J@Example.com  ', 'Enterprise', 'USA', '2025-01-12'),
+        (2, 'Bob Smith', 'bob.smith@techcorp.io', 'SMB', 'UK', '2025-02-03'),
+        (3, '  charlie chen', 'Charlie.Chen@DataHub.tw', 'Enterprise', 'Taiwan', '2025-02-18'),
+        (4, 'Diana Prince', 'diana@amazonia.org', 'Consumer', 'USA', '2025-03-05'),
+        (5, 'ethan hunt  ', 'ETHAN@IMF.GOV', 'Enterprise', 'Germany', '2025-03-22'),
+        (6, 'Fiona Gallagher', 'fiona.g@southside.net', 'Consumer', 'USA', '2025-04-10'),
+        (7, 'George Miller', 'george.m@ausfilm.au', 'SMB', 'Australia', '2025-05-01'),
+        (8, 'Hannah Abbott', 'hannah@hogwarts.uk', 'Consumer', 'UK', '2025-05-19'),
+        (9, 'Ian Wright', 'ian.wright@arsenal.uk', 'SMB', 'UK', '2025-06-11'),
+        (10, 'Julia Lin', 'julia.lin@fintech.tw', 'Enterprise', 'Taiwan', '2025-07-02');
+
+      -- Seed Products
+      INSERT INTO products VALUES
+        (101, 'SW-ETL-01', 'Automated ETL Pipeline Pro', 'Software', 120.00, 399.00),
+        (102, 'SW-SQL-02', 'Cloud SQL Optimizer Suite', 'Software', 90.00, 299.00),
+        (103, 'CL-DB-03', 'Managed Warehouse Node (1TB)', 'Cloud Infra', 210.00, 550.00),
+        (104, 'CS-AUD-04', 'Database Architecture Audit', 'Consulting', 300.00, 950.00),
+        (105, 'AD-BI-05', 'Executive BI Connector Pack', 'Add-on', 35.00, 149.00),
+        (106, 'AD-SEC-06', 'Zero-Trust Compliance Module', 'Add-on', 60.00, 220.00);
+
+      -- Seed Orders (Includes NULL discount_pct & Cancelled orders for realistic cleaning/analytics)
+      INSERT INTO orders VALUES
+        (1001, 1, '2025-01-15', 'Completed', 0.10, 0.00),
+        (1002, 2, '2025-02-10', 'Completed', NULL, 15.00),
+        (1003, 3, '2025-02-25', 'Completed', 0.15, 0.00),
+        (1004, 1, '2025-03-14', 'Completed', 0.05, 0.00),
+        (1005, 4, '2025-03-20', 'Cancelled', 0.00, 10.00),
+        (1006, 5, '2025-04-02', 'Completed', 0.20, 0.00),
+        (1007, 3, '2025-04-18', 'Completed', NULL, 0.00),
+        (1008, 6, '2025-05-05', 'Completed', 0.00, 12.00),
+        (1009, 7, '2025-05-22', 'Refunded', 0.10, 15.00),
+        (1010, 1, '2025-06-08', 'Completed', 0.15, 0.00),
+        (1011, 8, '2025-06-25', 'Completed', NULL, 10.00),
+        (1012, 9, '2025-07-12', 'Completed', 0.05, 15.00),
+        (1013, 10, '2025-07-28', 'Completed', 0.10, 0.00),
+        (1014, 5, '2025-08-14', 'Completed', 0.15, 0.00),
+        (1015, 3, '2025-09-03', 'Completed', 0.10, 0.00);
+
+      -- Seed Order Items
+      INSERT INTO order_items VALUES
+        (1, 1001, 101, 2, 399.00),
+        (2, 1001, 105, 1, 149.00),
+        (3, 1002, 102, 1, 299.00),
+        (4, 1003, 103, 2, 550.00),
+        (5, 1003, 104, 1, 950.00),
+        (6, 1004, 106, 3, 220.00),
+        (7, 1005, 105, 1, 149.00),
+        (8, 1006, 101, 3, 399.00),
+        (9, 1006, 103, 1, 550.00),
+        (10, 1007, 102, 2, 299.00),
+        (11, 1008, 105, 2, 149.00),
+        (12, 1009, 102, 1, 299.00),
+        (13, 1010, 104, 1, 950.00),
+        (14, 1010, 106, 2, 220.00),
+        (15, 1011, 105, 1, 149.00),
+        (16, 1012, 101, 1, 399.00),
+        (17, 1013, 103, 3, 550.00),
+        (18, 1014, 104, 1, 950.00),
+        (19, 1015, 101, 2, 399.00),
+        (20, 1015, 106, 1, 220.00);
+
+      -- Seed Support Tickets
+      INSERT INTO support_tickets VALUES
+        (501, 1, 1001, '2025-01-18', 'Onboarding Setup', 4.5, 5),
+        (502, 2, 1002, '2025-02-14', 'Billing Inquiry', 2.0, 4),
+        (503, 3, 1003, '2025-03-01', 'API Rate Limit', 12.5, 4),
+        (504, 4, 1005, '2025-03-21', 'Cancellation Request', 1.5, 3),
+        (505, 7, 1009, '2025-05-24', 'Refund Processing', 18.0, 2),
+        (506, 5, 1006, '2025-04-10', 'Security Audit Docs', 6.0, 5),
+        (507, 10, 1013, '2025-08-02', 'Cluster Scaling', 8.5, 5),
+        (508, 6, NULL, '2025-06-15', 'Pre-Sales Question', 1.0, 5);
+    `;
+
+    // ==========================================
+    // 2. 15 CURATED SQL BUSINESS SAMPLES
+    // ==========================================
+    const SAMPLE_QUERIES = [
+      // --- JOIN (3) ---
+      {
+        id: 1,
+        category: "JOIN",
+        title: "1. Multi-Table Order Line Item Breakdown",
+        desc: "Joins 4 tables (orders, customers, order_items, products) to produce a complete invoice-level report.",
+        sql: `SELECT 
+  o.order_id,
+  o.order_date,
+  TRIM(c.full_name) AS customer,
+  c.segment,
+  p.product_name,
+  oi.quantity,
+  oi.sold_price,
+  ROUND(oi.quantity * oi.sold_price * (1 - COALESCE(o.discount_pct, 0)), 2) AS net_line_total
+FROM orders o
+INNER JOIN customers c ON o.customer_id = c.customer_id
+INNER JOIN order_items oi ON o.order_id = oi.order_id
+INNER JOIN products p ON oi.product_id = p.product_id
+WHERE o.status = 'Completed'
+ORDER BY o.order_date DESC, o.order_id;`
+      },
+      {
+        id: 2,
+        category: "JOIN",
+        title: "2. Customer Support & Order Correlation (LEFT JOIN)",
+        desc: "Uses LEFT JOIN to inspect all support tickets—including pre-sales tickets that have no linked order.",
+        sql: `SELECT 
+  t.ticket_id,
+  TRIM(c.full_name) AS customer,
+  c.country,
+  COALESCE(CAST(o.order_id AS TEXT), 'No Order Linked') AS order_ref,
+  t.issue_type,
+  t.resolution_hours,
+  t.csat_score
+FROM support_tickets t
+INNER JOIN customers c ON t.customer_id = c.customer_id
+LEFT JOIN orders o ON t.order_id = o.order_id
+ORDER BY t.resolution_hours DESC;`
+      },
+      {
+        id: 3,
+        category: "JOIN",
+        title: "3. Unpurchased Products & Low-Traction Audit",
+        desc: "Identifies product performance across completed orders using LEFT JOIN and conditional aggregation.",
+        sql: `SELECT 
+  p.sku,
+  p.product_name,
+  p.category,
+  COALESCE(SUM(CASE WHEN o.status = 'Completed' THEN oi.quantity ELSE 0 END), 0) AS units_sold,
+  COALESCE(SUM(CASE WHEN o.status = 'Completed' THEN oi.quantity * oi.sold_price ELSE 0 END), 0) AS gross_revenue
+FROM products p
+LEFT JOIN order_items oi ON p.product_id = oi.product_id
+LEFT JOIN orders o ON oi.order_id = o.order_id
+GROUP BY p.product_id, p.sku, p.product_name, p.category
+ORDER BY gross_revenue DESC;`
+      },
+
+      // --- CTE (3) ---
+      {
+        id: 4,
+        category: "CTE",
+        title: "4. Customer Lifetime Value (LTV) & Gross Margin CTE",
+        desc: "Uses Common Table Expressions (WITH) to separate order economics before aggregating customer profitability.",
+        sql: `WITH order_economics AS (
+  SELECT 
+    o.customer_id,
+    o.order_id,
+    SUM(oi.quantity * oi.sold_price * (1 - COALESCE(o.discount_pct, 0))) AS net_revenue,
+    SUM(oi.quantity * p.unit_cost) AS total_cogs
+  FROM orders o
+  JOIN order_items oi ON o.order_id = oi.order_id
+  JOIN products p ON oi.product_id = p.product_id
+  WHERE o.status = 'Completed'
+  GROUP BY o.customer_id, o.order_id
+)
+SELECT 
+  c.customer_id,
+  TRIM(c.full_name) AS customer_name,
+  c.segment,
+  COUNT(oe.order_id) AS completed_orders,
+  ROUND(SUM(oe.net_revenue), 2) AS total_ltv,
+  ROUND(SUM(oe.net_revenue - oe.total_cogs), 2) AS gross_profit,
+  ROUND(SUM(oe.net_revenue - oe.total_cogs) / SUM(oe.net_revenue) * 100, 1) AS margin_pct
+FROM customers c
+JOIN order_economics oe ON c.customer_id = oe.customer_id
+GROUP BY c.customer_id
+ORDER BY total_ltv DESC;`
+      },
+      {
+        id: 5,
+        category: "CTE",
+        title: "5. Monthly Revenue & MoM Growth Rate",
+        desc: "Chains two CTEs to compute monthly net sales and compare against the prior month.",
+        sql: `WITH monthly_sales AS (
+  SELECT 
+    SUBSTR(o.order_date, 1, 7) AS sales_month,
+    ROUND(SUM(oi.quantity * oi.sold_price * (1 - COALESCE(o.discount_pct, 0))), 2) AS revenue
+  FROM orders o
+  JOIN order_items oi ON o.order_id = oi.order_id
+  WHERE o.status = 'Completed'
+  GROUP BY SUBSTR(o.order_date, 1, 7)
+),
+mom_calc AS (
+  SELECT 
+    sales_month,
+    revenue,
+    LAG(revenue) OVER (ORDER BY sales_month) AS prev_month_revenue
+  FROM monthly_sales
+)
+SELECT 
+  sales_month,
+  revenue,
+  prev_month_revenue,
+  ROUND((revenue - prev_month_revenue) / prev_month_revenue * 100, 2) AS mom_growth_pct
+FROM mom_calc;`
+      },
+      {
+        id: 6,
+        category: "CTE",
+        title: "6. High-Value Customer Segmentation (VIP Tiers)",
+        desc: "Classifies customers into Platinum, Gold, and Standard tiers based on spend thresholds.",
+        sql: `WITH customer_spend AS (
+  SELECT 
+    c.customer_id,
+    TRIM(c.full_name) AS customer_name,
+    c.country,
+    COALESCE(SUM(oi.quantity * oi.sold_price * (1 - COALESCE(o.discount_pct, 0))), 0) AS total_spent
+  FROM customers c
+  LEFT JOIN orders o ON c.customer_id = o.customer_id AND o.status = 'Completed'
+  LEFT JOIN order_items oi ON o.order_id = oi.order_id
+  GROUP BY c.customer_id
+)
+SELECT 
+  customer_name,
+  country,
+  ROUND(total_spent, 2) AS total_spent,
+  CASE 
+    WHEN total_spent >= 2500 THEN 'Platinum VIP'
+    WHEN total_spent >= 1000 THEN 'Gold'
+    WHEN total_spent > 0 THEN 'Standard'
+    ELSE 'Prospect (No Completed Orders)'
+  END AS customer_tier
+FROM customer_spend
+ORDER BY total_spent DESC;`
+      },
+
+      // --- WINDOW FUNCTIONS (3) ---
+      {
+        id: 7,
+        category: "WINDOW",
+        title: "7. Top-Selling Product per Category (DENSE_RANK)",
+        desc: "Ranks products within each product category by revenue using PARTITION BY.",
+        sql: `WITH product_rev AS (
+  SELECT 
+    p.category,
+    p.product_name,
+    SUM(oi.quantity) AS units_sold,
+    ROUND(SUM(oi.quantity * oi.sold_price), 2) AS gross_sales
+  FROM products p
+  JOIN order_items oi ON p.product_id = oi.product_id
+  JOIN orders o ON oi.order_id = o.order_id
+  WHERE o.status = 'Completed'
+  GROUP BY p.category, p.product_name
+)
+SELECT 
+  category,
+  DENSE_RANK() OVER (PARTITION BY category ORDER BY gross_sales DESC) AS category_rank,
+  product_name,
+  units_sold,
+  gross_sales
+FROM product_rev
+ORDER BY category, category_rank;`
+      },
+      {
+        id: 8,
+        category: "WINDOW",
+        title: "8. Cumulative Running Revenue Over Time",
+        desc: "Calculates an order-by-order running revenue total across the fiscal year.",
+        sql: `WITH order_totals AS (
+  SELECT 
+    o.order_id,
+    o.order_date,
+    TRIM(c.full_name) AS customer,
+    ROUND(SUM(oi.quantity * oi.sold_price * (1 - COALESCE(o.discount_pct, 0))), 2) AS order_net
+  FROM orders o
+  JOIN customers c ON o.customer_id = c.customer_id
+  JOIN order_items oi ON o.order_id = oi.order_id
+  WHERE o.status = 'Completed'
+  GROUP BY o.order_id
+)
+SELECT 
+  order_date,
+  order_id,
+  customer,
+  order_net,
+  ROUND(SUM(order_net) OVER (ORDER BY order_date, order_id ROWS UNBOUNDED PRECEDING), 2) AS running_total
+FROM order_totals;`
+      },
+      {
+        id: 9,
+        category: "WINDOW",
+        title: "9. Days Between Repeat Purchases (LEAD / LAG)",
+        desc: "Measures customer purchase velocity by calculating days elapsed between consecutive orders.",
+        sql: `SELECT 
+  TRIM(c.full_name) AS customer,
+  o.order_id,
+  o.order_date AS current_order_date,
+  LAG(o.order_date) OVER (PARTITION BY o.customer_id ORDER BY o.order_date) AS previous_order_date,
+  CAST(
+    JULIANDAY(o.order_date) - JULIANDAY(LAG(o.order_date) OVER (PARTITION BY o.customer_id ORDER BY o.order_date))
+  AS INTEGER) AS days_since_last_order
+FROM orders o
+JOIN customers c ON o.customer_id = c.customer_id
+WHERE o.status = 'Completed'
+ORDER BY customer, o.order_date;`
+      },
+
+      // --- DATA CLEANING (3) ---
+      {
+        id: 10,
+        category: "CLEANING",
+        title: "10. Standardize Messy Names & Emails (TRIM / LOWER)",
+        desc: "Detects and cleans leading/trailing whitespace and inconsistent email capitalization in the customers table.",
+        sql: `SELECT 
+  customer_id,
+  full_name AS raw_name,
+  TRIM(full_name) AS cleaned_name,
+  email AS raw_email,
+  LOWER(TRIM(email)) AS standardized_email,
+  CASE 
+    WHEN full_name != TRIM(full_name) OR email != LOWER(TRIM(email)) THEN 'Needs Cleaning'
+    ELSE 'Clean'
+  END AS audit_status
+FROM customers;`
+      },
+      {
+        id: 11,
+        category: "CLEANING",
+        title: "11. NULL Handling & Imputation Audit on Orders",
+        desc: "Identifies NULL discount percentages and demonstrates safe default imputation using COALESCE.",
+        sql: `SELECT 
+  order_id,
+  customer_id,
+  order_date,
+  status,
+  discount_pct AS raw_discount,
+  COALESCE(discount_pct, 0.0) AS imputed_discount,
+  CASE 
+    WHEN discount_pct IS NULL THEN 'Imputed 0% (Was NULL)'
+    ELSE 'Explicit Value'
+  END AS data_quality_flag
+FROM orders
+ORDER BY discount_pct IS NOT NULL, order_id;`
+      },
+      {
+        id: 12,
+        category: "CLEANING",
+        title: "12. In-Place Data Cleanup Mutation (UPDATE + SELECT)",
+        desc: "Executes an actual UPDATE statement to permanently sanitize customer names/emails in the live SQLite session.",
+        sql: `UPDATE customers
+SET 
+  full_name = TRIM(full_name),
+  email = LOWER(TRIM(email));
+
+SELECT customer_id, full_name, email, segment, country 
+FROM customers 
+LIMIT 10;`
+      },
+
+      // --- BUSINESS ANALYTICS (3) ---
+      {
+        id: 13,
+        category: "ANALYTICS",
+        title: "13. Executive KPI Summary Dashboard",
+        desc: "Single-row executive snapshot covering Net Revenue, Gross Margin, AOV, and CSAT.",
+        sql: `WITH sales_kpi AS (
+  SELECT 
+    COUNT(DISTINCT o.order_id) AS completed_orders,
+    ROUND(SUM(oi.quantity * oi.sold_price * (1 - COALESCE(o.discount_pct, 0))), 2) AS net_revenue,
+    ROUND(SUM(oi.quantity * (oi.sold_price * (1 - COALESCE(o.discount_pct, 0)) - p.unit_cost)), 2) AS gross_profit
+  FROM orders o
+  JOIN order_items oi ON o.order_id = oi.order_id
+  JOIN products p ON oi.product_id = p.product_id
+  WHERE o.status = 'Completed'
+)
+SELECT 
+  completed_orders,
+  net_revenue,
+  gross_profit,
+  ROUND(net_revenue / completed_orders, 2) AS avg_order_value,
+  (SELECT ROUND(AVG(csat_score), 2) FROM support_tickets) AS avg_csat_out_of_5
+FROM sales_kpi;`
+      },
+      {
+        id: 14,
+        category: "ANALYTICS",
+        title: "14. Revenue & Order Share by Country",
+        desc: "Calculates geographic revenue contribution as a percentage of total company sales.",
+        sql: `WITH country_sales AS (
+  SELECT 
+    c.country,
+    COUNT(DISTINCT o.order_id) AS orders_count,
+    ROUND(SUM(oi.quantity * oi.sold_price * (1 - COALESCE(o.discount_pct, 0))), 2) AS revenue
+  FROM customers c
+  JOIN orders o ON c.customer_id = o.customer_id
+  JOIN order_items oi ON o.order_id = oi.order_id
+  WHERE o.status = 'Completed'
+  GROUP BY c.country
+)
+SELECT 
+  country,
+  orders_count,
+  revenue,
+  ROUND(revenue * 100.0 / SUM(revenue) OVER (), 1) AS revenue_share_pct
+FROM country_sales
+ORDER BY revenue DESC;`
+      },
+      {
+        id: 15,
+        category: "ANALYTICS",
+        title: "15. Product Cross-Sell / Market Basket Affinity",
+        desc: "Self-joins order_items to find which pairs of products are most frequently purchased together.",
+        sql: `SELECT 
+  p1.product_name AS product_a,
+  p2.product_name AS product_b,
+  COUNT(*) AS times_bought_together
+FROM order_items oi1
+JOIN order_items oi2 
+  ON oi1.order_id = oi2.order_id 
+  AND oi1.product_id < oi2.product_id
+JOIN orders o ON oi1.order_id = o.order_id
+JOIN products p1 ON oi1.product_id = p1.product_id
+JOIN products p2 ON oi2.product_id = p2.product_id
+WHERE o.status = 'Completed'
+GROUP BY p1.product_name, p2.product_name
+ORDER BY times_bought_together DESC;`
+      }
+    ];
+
+    // ==========================================
+    // 3. APPLICATION STATE & INITIALIZATION
+    // ==========================================
+    let db = null;
+    let SQL = null;
+    let editor = null;
+    let lastResultData = null;
+
+    // Initialize CodeMirror
+    editor = CodeMirror.fromTextArea(document.getElementById("sqlEditor"), {
+      mode: "text/x-sql",
+      theme: "eclipse",
+      lineNumbers: true,
+      matchBrackets: true,
+      indentWithTabs: false,
+      tabSize: 2,
+      extraKeys: {
+        "Ctrl-Enter": () => executeCurrentQuery(),
+        "Cmd-Enter": () => executeCurrentQuery()
+      }
+    });
+
+    // Initialize SQL.js WebAssembly
+    async function initDatabaseEngine() {
+      try {
+        SQL = await initSqlJs({
+          locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
+        });
+        resetDatabase(false);
+        renderSampleList("ALL");
+        loadSampleQuery(SAMPLE_QUERIES[0]);
+      } catch (err) {
+        setStatus(`Failed to load SQLite engine: ${err.message}`, true);
+      }
+    }
+
+    function resetDatabase(showNotification = true) {
+      if (db) {
+        db.close();
+      }
+      db = new SQL.Database();
+      db.run(INIT_SQL);
+      buildDatabaseExplorer();
+      if (showNotification) {
+        setStatus("Database reset to initial 5-table seed state.", false);
+        executeCurrentQuery();
+      }
+    }
+
+    // ==========================================
+    // 4. DATABASE EXPLORER (INSPECT TABLES & COLS)
+    // ==========================================
+    function buildDatabaseExplorer() {
+      const schemaListEl = document.getElementById("schemaList");
+      schemaListEl.innerHTML = "";
+
+      const tablesRes = db.exec(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name NOT LIKE 'sqlite_%' 
+        ORDER BY name;
+      `);
+
+      if (!tablesRes.length) return;
+
+      const tableNames = tablesRes[0].values.map(r => r[0]);
+
+      tableNames.forEach((tableName, idx) => {
+        const countRes = db.exec(`SELECT COUNT(*) FROM ${tableName};`);
+        const rowCount = countRes[0].values[0][0];
+
+        const pragmaCols = db.exec(`PRAGMA table_info(${tableName});`)[0].values;
+        const pragmaFks = db.exec(`PRAGMA foreign_key_list(${tableName});`)[0]?.values || [];
+        const fkCols = new Set(pragmaFks.map(fk => fk[3]));
+
+        const itemDiv = document.createElement("div");
+        itemDiv.className = `schema-item ${idx === 0 ? "open" : ""}`;
+
+        const titleDiv = document.createElement("div");
+        titleDiv.className = "schema-title";
+        titleDiv.innerHTML = `
+          <span>📋 ${tableName}</span>
+          <span style="font-size: 0.75rem; color: var(--text-secondary);">${rowCount} rows ▾</span>
+        `;
+        titleDiv.onclick = () => itemDiv.classList.toggle("open");
+
+        const colsDiv = document.createElement("div");
+        colsDiv.className = "schema-cols";
+
+        pragmaCols.forEach(col => {
+          const colName = col[1];
+          const colType = col[2];
+          const isPk = col[5] === 1;
+          const isFk = fkCols.has(colName);
+
+          const colRow = document.createElement("div");
+          colRow.className = "col-row";
+          colRow.innerHTML = `
+            <span>
+              ${colName}
+              ${isPk ? '<span class="pk-badge">PK</span>' : ''}
+              ${isFk ? '<span class="fk-badge">FK</span>' : ''}
+            </span>
+            <span class="col-type">${colType}</span>
+          `;
+          colsDiv.appendChild(colRow);
+        });
+
+        // Quick preview button inside schema accordion
+        const previewBtn = document.createElement("button");
+        previewBtn.style.cssText = "width:100%; margin-top:0.5rem; padding:0.3rem; font-size:0.75rem; justify-content:center;";
+        previewBtn.textContent = `Preview SELECT * FROM ${tableName}`;
+        previewBtn.onclick = () => {
+          document.getElementById("queryDescription").innerHTML = `<strong>Table Preview:</strong> Inspecting all records in <code>${tableName}</code>.`;
+          editor.setValue(`SELECT * FROM ${tableName};`);
+          executeCurrentQuery();
+        };
+        colsDiv.appendChild(previewBtn);
+
+        itemDiv.appendChild(titleDiv);
+        itemDiv.appendChild(colsDiv);
+        schemaListEl.appendChild(itemDiv);
+      });
+    }
+
+    // ==========================================
+    // 5. SAMPLE QUERIES SIDEBAR
+    // ==========================================
+    function renderSampleList(category) {
+      const listEl = document.getElementById("sampleList");
+      listEl.innerHTML = "";
+
+      const filtered = category === "ALL" 
+        ? SAMPLE_QUERIES 
+        : SAMPLE_QUERIES.filter(q => q.category === category);
+
+      filtered.forEach(sample => {
+        const card = document.createElement("div");
+        card.className = "sample-card";
+        card.dataset.id = sample.id;
+        card.innerHTML = `
+          <span class="sample-tag">${sample.category}</span>
+          <div class="sample-title">${sample.title}</div>
+        `;
+        card.onclick = () => loadSampleQuery(sample);
+        listEl.appendChild(card);
+      });
+    }
+
+    function loadSampleQuery(sample) {
+      document.querySelectorAll(".sample-card").forEach(el => {
+        el.classList.toggle("active", Number(el.dataset.id) === sample.id);
+      });
+      document.getElementById("queryDescription").innerHTML = `
+        <strong>${sample.title}:</strong> ${sample.desc}
+      `;
+      editor.setValue(sample.sql);
+      executeCurrentQuery();
+    }
+
+    // Category filter click events
+    document.getElementById("categoryTabs").addEventListener("click", (e) => {
+      if (!e.target.classList.contains("cat-btn")) return;
+      document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
+      e.target.classList.add("active");
+      renderSampleList(e.target.dataset.cat);
+    });
+
+    // ==========================================
+    // 6. QUERY EXECUTION & TABLE RENDERING
+    // ==========================================
+    function executeCurrentQuery() {
+      if (!db) return;
+      const sqlText = editor.getValue().trim();
+      const resultsContainer = document.getElementById("resultsContainer");
+      const exportBtn = document.getElementById("exportCsvBtn");
+      const rowCountBadge = document.getElementById("rowCountBadge");
+
+      if (!sqlText) {
+        setStatus("Please enter a SQL query to execute.", true);
+        return;
+      }
+
+      const startTime = performance.now();
+      try {
+        const results = db.exec(sqlText);
+        const elapsed = (performance.now() - startTime).toFixed(2);
+
+        // Refresh explorer in case DDL/DML changed row counts or tables
+        buildDatabaseExplorer();
+
+        if (results.length === 0) {
+          lastResultData = null;
+          exportBtn.disabled = true;
+          rowCountBadge.textContent = "0 rows";
+          setStatus(`Query executed successfully in ${elapsed} ms (No rows returned / DML statement).`, false);
+          resultsContainer.innerHTML = `<div class="empty-state">Statement executed successfully. No result set to display.</div>`;
+          return;
+        }
+
+        // Display the final result set if multiple statements were executed
+        const finalResult = results[results.length - 1];
+        lastResultData = finalResult;
+        exportBtn.disabled = false;
+
+        const { columns, values } = finalResult;
+        rowCountBadge.textContent = `${values.length} row${values.length === 1 ? "" : "s"}`;
+        setStatus(`Executed successfully in ${elapsed} ms.`, false);
+
+        const table = document.createElement("table");
+        const thead = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+
+        columns.forEach(col => {
+          const th = document.createElement("th");
+          th.textContent = col;
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+        values.forEach(row => {
+          const tr = document.createElement("tr");
+          row.forEach(cell => {
+            const td = document.createElement("td");
+            if (cell === null) {
+              td.innerHTML = `<span class="null-val">NULL</span>`;
+            } else {
+              td.textContent = cell;
+            }
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+
+        resultsContainer.innerHTML = "";
+        resultsContainer.appendChild(table);
+
+      } catch (err) {
+        lastResultData = null;
+        exportBtn.disabled = true;
+        rowCountBadge.textContent = "Error";
+        setStatus(`SQL Error: ${err.message}`, true);
+        resultsContainer.innerHTML = `<div class="empty-state" style="color: var(--danger-color);">${err.message}</div>`;
+      }
+    }
+
+    function setStatus(message, isError) {
+      const statusBar = document.getElementById("statusBar");
+      statusBar.innerHTML = `<span class="${isError ? "status-err" : "status-ok"}">${isError ? "✖" : "✔"} ${message}</span>`;
+    }
+
+    // Export results to CSV
+    function exportToCsv() {
+      if (!lastResultData) return;
+      const { columns, values } = lastResultData;
+      const escapeCsv = (val) => {
+        if (val === null || val === undefined) return "";
+        const str = String(val);
+        if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      const csvLines = [
+        columns.map(escapeCsv).join(","),
+        ...values.map(row => row.map(escapeCsv).join(","))
+      ];
+
+      const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sql_query_export_${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // ==========================================
+    // 7. EVENT LISTENERS & THEME TOGGLE
+    // ==========================================
+    document.getElementById("runQueryBtn").addEventListener("click", executeCurrentQuery);
+    document.getElementById("resetDbBtn").addEventListener("click", () => resetDatabase(true));
+    document.getElementById("exportCsvBtn").addEventListener("click", exportToCsv);
+    document.getElementById("formatBtn").addEventListener("click", () => {
+      editor.setValue("");
+      editor.focus();
+    });
+
+    document.getElementById("themeToggle").addEventListener("click", () => {
+      const htmlEl = document.documentElement;
+      const current = htmlEl.getAttribute("data-theme");
+      const next = current === "light" ? "dark" : "light";
+      htmlEl.setAttribute("data-theme", next);
+      editor.setOption("theme", next === "dark" ? "dracula" : "eclipse");
+    });
+
+    // Start Engine
+    initDatabaseEngine();
+  </script>
+</body>
+</html>
